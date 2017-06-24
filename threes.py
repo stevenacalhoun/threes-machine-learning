@@ -73,41 +73,71 @@ class Threes():
     self.stdscr.keypad(1)
     self.writeBeginning = writeBeginning
 
-  def play(self):
+  def env_start(self):
+    self.previousState = []
+    self.currentState = self.board.serialState()
+    self.counter = 0
+
+    returnObs = Observation()
+    returnObs.worldState = self.board.serialState()
+    returnObs.availableActions = self.board.possibleMoves()
+
+    return returnObs
+
+  def env_step(self, direction):
+    self.previousState = self.board.serialState()
+
+
+  def printOutput(self, direction):
+    # Clear print space
+    self.stdscr.addstr(self.writeBeginning,0,blankSpace())
+
+    # Write board
     self.stdscr.addstr(self.writeBeginning,0,str(self.board))
     self.stdscr.addstr(self.writeBeginning+6,0,"Hit 'q' to quit")
+    self.stdscr.addstr(self.writeBeginning+7, 0, direction)
+    self.stdscr.addstr(self.writeBeginning+7,0,"")
     self.stdscr.refresh()
 
-    gameOver = False
-    while not gameOver:
-        key = self.stdscr.getch()
-        self.stdscr.addstr(self.writeBeginning+7,0,"     ")
-        self.stdscr.refresh()
-        boardChanged = False
-        if key == curses.KEY_UP:
-          direction = UP
-        elif key == curses.KEY_DOWN:
-          direction = DOWN
-        elif key == curses.KEY_LEFT:
-          direction = LEFT
-        elif key == curses.KEY_RIGHT:
-            direction = RIGHT
-        else:
-          gameOver = True
-          continue
+  def getInput(self):
+    key = self.stdscr.getch()
+    if key == curses.KEY_UP:
+      direction = UP
+    elif key == curses.KEY_DOWN:
+      direction = DOWN
+    elif key == curses.KEY_LEFT:
+      direction = LEFT
+    elif key == curses.KEY_RIGHT:
+        direction = RIGHT
+    else:
+      direction = False
 
-        boardChanged = self.board.move(direction)
-        self.stdscr.addstr(self.writeBeginning+7, 0, direction)
-
-        if boardChanged == "Success":
-          self.stdscr.addstr(self.writeBeginning,0,blankSpace())
-          self.stdscr.addstr(self.writeBeginning,0,str(self.board))
-          self.stdscr.addstr(self.writeBeginning+7,0,"")
-          self.history.append(self.board.serialState())
+    return direction
 
 
-        if not self.board.movesExists():
-          gameOver = True
+  def executeMove(self, direction):
+    # Quit on non move key
+    if not direction:
+      return False
+
+    # Move board
+    self.board.move(direction)
+
+    # Check for game over
+    if not self.board.movesExists():
+      return False
+
+    return True
+
+  def play(self):
+    direction = ""
+    while True:
+      # Print game and get input
+      self.printOutput(direction)
+      direction = self.getInput()
+
+      if not self.executeMove(direction):
+        break
 
     self.stdscr.addstr(self.writeBeginning+8, 0, "Game Over")
     curses.endwin()
@@ -328,7 +358,7 @@ class Tile():
 
 def blankSpace():
   blankSpaces = ""
-  for i in range(0,4):
+  for i in range(0,10):
     for j in range(0,20):
       blankSpaces += " "
     blankSpaces += "\n"

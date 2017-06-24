@@ -3,7 +3,7 @@ from Observation import *
 from Reward import *
 from Action import *
 from Agent import *
-from Environment import *
+from Threes import *
 import numpy
 
 
@@ -23,9 +23,7 @@ play = 2
 maxr = None
 
 # Set up environment for initial training
-gridEnvironment = Environment()
-gridEnvironment.randomStart = False
-gridEnvironment.enemyMode = 2
+gridEnvironment = Threes()
 gridEnvironment.verbose = 0
 
 # Set up agent
@@ -37,6 +35,7 @@ for i in range(episodes):
   # Train
   gridAgent.agent_reset()
   gridAgent.qLearn(gridAgent.initialObs)
+
   # Test
   gridAgent.agent_reset()
   gridAgent.executePolicy(gridAgent.initialObs)
