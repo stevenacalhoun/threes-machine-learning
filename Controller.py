@@ -5,8 +5,8 @@ from Action import *
 from Agent import *
 from ThreesGame import *
 import numpy
-
 import time
+
 # Training episodes
 episodes = 10000
 

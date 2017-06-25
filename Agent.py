@@ -11,9 +11,6 @@ import datetime
 import time
 
 class Agent:
-  # Random generator
-  randGenerator=Random()
-
   # Remember last action
   lastAction=Action()
 
