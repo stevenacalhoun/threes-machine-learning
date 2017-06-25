@@ -120,16 +120,16 @@ class Agent:
       # execute the step and get a new observation and reward
       currentObs, reward = self.gridEnvironment.env_step(newAction)
       if writeFile:
-        outputfile.write("reward:" + str(reward.rewardValue) + "\n")
-        outputfile.write("total reward:" + str(self.totalReward + reward.rewardValue) + "\n")
+        outputfile.write("reward:" + str(reward) + "\n")
+        outputfile.write("total reward:" + str(self.totalReward + reward) + "\n")
         outputfile.write(str(self.gridEnvironment)+"\n")
         outputfile.write("\n")
 
       if self.isVerbose():
-        print "reward:", reward.rewardValue
-        print "total reward:" + str(self.totalReward + reward.rewardValue)
+        print "reward:", reward
+        print "total reward:" + str(self.totalReward + reward)
 
-      self.totalReward = self.totalReward + reward.rewardValue
+      self.totalReward = self.totalReward + reward
       self.workingObservation = copy.deepcopy(currentObs)
 
       # increment counter
@@ -169,7 +169,7 @@ class Agent:
 
       # Get the new state and reward from the environment
       currentObs, reward = self.gridEnvironment.env_step(newAction)
-      rewardValue = reward.rewardValue
+      rewardValue = reward
 
       # Make sure table is populated correctly
       self.initializeVtableStateEntry(currentObs.worldState)
@@ -177,7 +177,6 @@ class Agent:
       # update the value table
       lastFlatState = self.calculateFlatState(self.workingObservation.worldState)
       newFlatState = self.calculateFlatState(currentObs.worldState)
-      #self.updateVtable(newFlatState, lastFlatState, newAction.actionValue, lastAction, rewardValue, currentObs.isTerminal, currentObs.availableActions)
       self.updateVtable(newFlatState, lastFlatState, newAction.actionValue, rewardValue, currentObs.isTerminal, currentObs.availableActions)
 
       # increment counter
@@ -185,7 +184,7 @@ class Agent:
       self.workingObservation = self.copyObservation(currentObs)
 
       # increment total reward
-      self.totalReward = self.totalReward + reward.rewardValue
+      self.totalReward = self.totalReward + reward
 
     # Done learning, reset environment
     self.gridEnvironment.env_reset()

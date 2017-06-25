@@ -7,7 +7,6 @@ from math import pow
 
 from Observation import *
 from Action import *
-from Reward import *
 
 def printMoveMatrix(matrix):
   strResp = ""
@@ -35,7 +34,7 @@ ROW_1_INDECIES = [0,  1,  2,  3]
 ROW_2_INDECIES = [4,  5,  6,  7]
 ROW_3_INDECIES = [8,  9,  10, 11]
 ROW_4_INDECIES = [12, 13, 14, 15]
-ROWS = [ROW_1_INDECIES,ROW_2_INDECIES,ROW_4_INDECIES]
+ROWS = [ROW_1_INDECIES,ROW_3_INDECIES,ROW_2_INDECIES,ROW_4_INDECIES]
 
 COL_1_INDECIES = [ROW_1_INDECIES[0], ROW_2_INDECIES[0], ROW_3_INDECIES[0], ROW_4_INDECIES[0]]
 COL_2_INDECIES = [ROW_1_INDECIES[1], ROW_2_INDECIES[1], ROW_3_INDECIES[1], ROW_4_INDECIES[1]]
@@ -92,7 +91,7 @@ class Threes():
     # Write board
     returnStr = ""
     returnStr += str(self.board) + "\n"
-    returnStr += "Last Move: " + self.lastDirection
+    returnStr += "Last Move: " + str(self.lastDirection)
 
     return returnStr
 
@@ -121,8 +120,7 @@ class Threes():
     observation.availableActions = self.board.possibleMoves()
     observation.isTerminal = not self.board.movesExists()
 
-    rewardValue = self.calculateReward(lastActionValue)
-    reward = Reward(rewardValue)
+    reward = self.calculateReward(lastActionValue)
 
     return observation, reward
 
@@ -163,7 +161,7 @@ class Threes():
       elif key == 'a':
         direction = LEFT
       elif key == 'l':
-        direction = False
+        direction = "Log"
         self.printDebugInfo()
       else:
         direction = False
@@ -218,8 +216,9 @@ class Threes():
       self.printOutput()
       self.lastDirection = self.getInput()
 
-      if not self.executeMove(self.lastDirection):
-        break
+      if self.lastDirection in ALL_MOVES:
+        if not self.executeMove(self.lastDirection):
+          break
 
     if self.printMode == 1:
       print "Game Over"
@@ -257,6 +256,15 @@ class Board():
       }
     }
 
+  def parseStringBoard(self, stringBoard):
+    i = 0
+    rows = stringBoard.split("\n")
+    for row in rows[1:-1]:
+      tiles = row.split(" ")
+      for tile in tiles:
+        self[i].value = int(tile)
+        i += 1
+        
   def serialState(self):
     state = []
     for i in range(0,NUM_TILES):
