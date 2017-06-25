@@ -8,6 +8,7 @@ from Action import *
 from Environment import *
 from random import Random
 import datetime
+import time
 
 class Agent:
   # Random generator
@@ -37,7 +38,7 @@ class Agent:
   currentObs = None
 
   # The training or testing episdoe will run for no more than this many time steps
-  numSteps = 500
+  numSteps = 100000
 
   # Total reward
   totalReward = 0.0
@@ -47,7 +48,7 @@ class Agent:
   verboseOverride = False
 
   # Number of actions in the environment
-  numActions = 5
+  numActions = 4
 
   # Constructor, takes a reference to an Environment
   def __init__(self, env):
@@ -112,8 +113,8 @@ class Agent:
       history.append((newAction.actionValue, self.workingObservation.worldState))
 
       if writeFile:
-        outputfile.write("state:" + str(self.workingObservation.worldState) + "\n")
-        outputfile.write("bot action:" + str(self.gridEnvironment.actionToString(newAction.actionValue)) + "\n")
+        outputfile.write("state: " + str(self.workingObservation.worldState) + "\n")
+        outputfile.write("action: " + str(newAction.actionValue) + "\n")
 
       if self.isVerbose():
         print "state:", self.workingObservation.worldState
@@ -189,7 +190,6 @@ class Agent:
       # increment total reward
       self.totalReward = self.totalReward + reward.rewardValue
 
-
     # Done learning, reset environment
     self.gridEnvironment.env_reset()
 
@@ -245,7 +245,7 @@ class Agent:
 
     # Choose random action
     if random.uniform(0,1) < self.epsilon:
-      return random.randint(0,4)
+      return random.randint(0,self.numActions-1)
 
     # Choose greedy option
     else:
@@ -264,12 +264,12 @@ class Agent:
     # YOUR CODE GOES BELOW HERE
 
     rewards = []
-    rewards.append(self.v_table[self.calculateFlatState(observation.worldState)][0])
-    rewards.append(self.v_table[self.calculateFlatState(observation.worldState)][1])
-    rewards.append(self.v_table[self.calculateFlatState(observation.worldState)][2])
-    rewards.append(self.v_table[self.calculateFlatState(observation.worldState)][3])
-    rewards.append(self.v_table[self.calculateFlatState(observation.worldState)][4])
+    for actionVal in range(0,self.numActions):
+      rewards.append(self.v_table[self.calculateFlatState(observation.worldState)][actionVal])
 
+    for i,actionVal in enumerate(rewards):
+      if not self.gridEnvironment.board.canMoveAV(i):
+        rewards[i] = -1
     return rewards.index(max(rewards))
 
     # YOUR CODE GOES ABOVE HERE

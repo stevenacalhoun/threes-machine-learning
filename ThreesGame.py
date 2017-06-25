@@ -1,8 +1,13 @@
 import random
 import curses
+import time
 
 from math import log
 from math import pow
+
+from Observation import *
+from Action import *
+from Reward import *
 
 def printMoveMatrix(matrix):
   strResp = ""
@@ -24,6 +29,7 @@ UP = 'Up'
 RIGHT = 'Right'
 DOWN = 'Down'
 LEFT = 'Left'
+ALL_MOVES = [UP,RIGHT,DOWN,LEFT]
 
 ROW_1_INDECIES = [0,  1,  2,  3]
 ROW_2_INDECIES = [4,  5,  6,  7]
@@ -64,16 +70,27 @@ RIGHT_ORDER.extend(COL_1_INDECIES)
 STACK_OPTIONS = [1,1,1,1,2,2,2,2,3,3,3,3]
 
 class Threes():
-  def __init__(self, writeBeginning):
+  def __init__(self, writeBeginning=False):
     self.board = Board()
-    self.history = [self.board.serialState()]
+    self.history = [
+      {
+        "state": self.board.serialState(),
+        "reward": self.board.scoreBoard()
+      }
+    ]
 
-    self.stdscr = curses.initscr()
-    curses.cbreak()
-    self.stdscr.keypad(1)
-    self.writeBeginning = writeBeginning
+    if writeBeginning != False:
+      self.stdscr = curses.initscr()
+      curses.cbreak()
+      self.stdscr.keypad(1)
+      self.writeBeginning = writeBeginning
 
+  def __str__(self):
+    return str(self.board)
+    
   def env_start(self):
+    self.board = Board()
+
     self.previousState = []
     self.currentState = self.board.serialState()
     self.counter = 0
@@ -84,9 +101,25 @@ class Threes():
 
     return returnObs
 
-  def env_step(self, direction):
+  def env_step(self, action):
     self.previousState = self.board.serialState()
+    self.executeMove(action.actionValue)
 
+    self.counter += 1
+
+    lastActionValue = action.actionValue
+    observation = Observation()
+    observation.worldState = self.board.serialState()
+    observation.availableActions = self.board.possibleMoves()
+    observation.isTerminal = not self.board.movesExists()
+
+    rewardValue = self.calculateReward(lastActionValue)
+    reward = Reward(rewardValue)
+
+    return observation, reward
+
+  def env_reset(self):
+    self.env_start()
 
   def printOutput(self, direction):
     # Clear print space
@@ -114,8 +147,10 @@ class Threes():
 
     return direction
 
-
   def executeMove(self, direction):
+    if type(direction) == int:
+      direction = ALL_MOVES[direction]
+
     # Quit on non move key
     if not direction:
       return False
@@ -123,11 +158,22 @@ class Threes():
     # Move board
     self.board.move(direction)
 
+    # Track history
+    self.history.append({
+      "state": self.board.serialState(),
+      "reward": self.board.scoreBoard()
+    })
+
     # Check for game over
     if not self.board.movesExists():
       return False
 
     return True
+
+  def calculateReward(self, lastAction=0):
+    if len(self.history) < 2:
+      return self.history[-1]["reward"]
+    return self.history[-1]["reward"] - self.history[-2]["reward"]
 
   def play(self):
     direction = ""
@@ -174,10 +220,9 @@ class Board():
 
   def serialState(self):
     state = []
-    for i in range(0,16):
+    for i in range(0,NUM_TILES):
       state.append(self[i].value)
     state.append(self.stack[-1])
-    state.append(self.movesExists())
     return state
 
   def initalizeBoardValues(self):
@@ -275,6 +320,9 @@ class Board():
     else:
       return self.sat(ROWS, moveMatrix)
 
+  def canMoveAV(self, direction):
+    return self.canMove(ALL_MOVES[int(direction)])
+
   def moveMatrix(self, adjacentFunc):
     boolVals = []
     for tileIdx in range(0,NUM_TILES):
@@ -322,6 +370,13 @@ class Board():
       if self[tileIdx].value != 1 and self[tileIdx].value != 2 and not self[tileIdx].empty():
         score += pow(3,(log(self[tileIdx].value/3,2)+1))
     return int(score)
+
+  def possibleMoves(self):
+    moves = []
+    for i, move in enumerate(ALL_MOVES):
+      if self.canMove(move):
+        moves.append(i)
+    return moves
 
 class Tile():
   def __init__(self, value=0):
