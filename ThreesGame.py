@@ -70,8 +70,9 @@ RIGHT_ORDER.extend(COL_1_INDECIES)
 STACK_OPTIONS = [1,1,1,1,2,2,2,2,3,3,3,3]
 
 class Threes():
-  def __init__(self, writeBeginning=False):
+  def __init__(self, printMode=0, writeBeginning=0):
     self.board = Board()
+    self.printMode = printMode
     self.history = [
       {
         "state": self.board.serialState(),
@@ -79,15 +80,22 @@ class Threes():
       }
     ]
 
-    if writeBeginning != False:
+    self.lastDirection = ""
+
+    if printMode == 2:
       self.stdscr = curses.initscr()
       curses.cbreak()
       self.stdscr.keypad(1)
       self.writeBeginning = writeBeginning
 
   def __str__(self):
-    return str(self.board)
-    
+    # Write board
+    returnStr = ""
+    returnStr += str(self.board) + "\n"
+    returnStr += "Last Move: " + self.lastDirection
+
+    return returnStr
+
   def env_start(self):
     self.board = Board()
 
@@ -121,29 +129,57 @@ class Threes():
   def env_reset(self):
     self.env_start()
 
-  def printOutput(self, direction):
-    # Clear print space
-    self.stdscr.addstr(self.writeBeginning,0,blankSpace())
+  def printOutput(self):
+    if self.printMode == 1:
+      print self
+      print
+    elif self.printMode == 2:
+      self.stdscr.addstr(self.writeBeginning,0,blankSpace())
+      self.stdscr.addstr(self.writeBeginning,0,str(self))
+      self.stdscr.addstr(self.writeBeginning+7,0,"")
+      self.stdscr.refresh()
 
-    # Write board
-    self.stdscr.addstr(self.writeBeginning,0,str(self.board))
-    self.stdscr.addstr(self.writeBeginning+6,0,"Hit 'q' to quit")
-    self.stdscr.addstr(self.writeBeginning+7, 0, direction)
-    self.stdscr.addstr(self.writeBeginning+7,0,"")
-    self.stdscr.refresh()
+  def printDebugInfo(self):
+    print "Move matrix for all dirs"
+    for direction in ALL_MOVES:
+      print direction
+      printStr = ""
+      matrix = self.board.moveMatrix(self.board.moveOptions[direction]["front_check"])
+      for i, val in enumerate(matrix):
+        printStr += str(int(val))
+        if i % 4 == 3:
+          printStr += "\n"
+      print printStr
 
   def getInput(self):
-    key = self.stdscr.getch()
-    if key == curses.KEY_UP:
-      direction = UP
-    elif key == curses.KEY_DOWN:
-      direction = DOWN
-    elif key == curses.KEY_LEFT:
-      direction = LEFT
-    elif key == curses.KEY_RIGHT:
+    if self.printMode == 1:
+      key = raw_input("Enter Move: ")
+      if key == 'w':
+        direction = UP
+      elif key == 'd':
         direction = RIGHT
-    else:
-      direction = False
+      elif key == 's':
+        direction = DOWN
+      elif key == 'a':
+        direction = LEFT
+      elif key == 'l':
+        direction = False
+        self.printDebugInfo()
+      else:
+        direction = False
+
+    elif self.printMode == 2:
+      key = self.stdscr.getch()
+      if key == curses.KEY_UP:
+        direction = UP
+      elif key == curses.KEY_DOWN:
+        direction = DOWN
+      elif key == curses.KEY_LEFT:
+        direction = LEFT
+      elif key == curses.KEY_RIGHT:
+          direction = RIGHT
+      else:
+        direction = False
 
     return direction
 
@@ -161,7 +197,7 @@ class Threes():
     # Track history
     self.history.append({
       "state": self.board.serialState(),
-      "reward": self.board.scoreBoard()
+      "score": self.board.scoreBoard()
     })
 
     # Check for game over
@@ -172,21 +208,24 @@ class Threes():
 
   def calculateReward(self, lastAction=0):
     if len(self.history) < 2:
-      return self.history[-1]["reward"]
-    return self.history[-1]["reward"] - self.history[-2]["reward"]
+      return 0
+    return self.history[-1]["score"] - self.history[-2]["score"]
 
   def play(self):
     direction = ""
     while True:
       # Print game and get input
-      self.printOutput(direction)
-      direction = self.getInput()
+      self.printOutput()
+      self.lastDirection = self.getInput()
 
-      if not self.executeMove(direction):
+      if not self.executeMove(self.lastDirection):
         break
 
-    self.stdscr.addstr(self.writeBeginning+8, 0, "Game Over")
-    curses.endwin()
+    if self.printMode == 1:
+      print "Game Over"
+    elif self.printMode == 2:
+      self.stdscr.addstr(self.writeBeginning+8, 0, "Game Over")
+      curses.endwin()
 
 class Board():
   def __init__(self):
@@ -420,11 +459,11 @@ def blankSpace():
   return blankSpaces
 
 def main():
-  writeBeginning = 0
+  writeBeginning = 1
 
   continuePlaying = True
   while continuePlaying:
-    game = Threes(writeBeginning)
+    game = Threes(writeBeginning=writeBeginning, printMode=1)
     game.play()
     writeBeginning += 10
   print
