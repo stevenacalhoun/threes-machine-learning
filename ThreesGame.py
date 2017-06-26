@@ -34,12 +34,13 @@ ROW_1_INDECIES = [0,  1,  2,  3]
 ROW_2_INDECIES = [4,  5,  6,  7]
 ROW_3_INDECIES = [8,  9,  10, 11]
 ROW_4_INDECIES = [12, 13, 14, 15]
-ROWS = [ROW_1_INDECIES,ROW_3_INDECIES,ROW_2_INDECIES,ROW_4_INDECIES]
 
 COL_1_INDECIES = [ROW_1_INDECIES[0], ROW_2_INDECIES[0], ROW_3_INDECIES[0], ROW_4_INDECIES[0]]
 COL_2_INDECIES = [ROW_1_INDECIES[1], ROW_2_INDECIES[1], ROW_3_INDECIES[1], ROW_4_INDECIES[1]]
 COL_3_INDECIES = [ROW_1_INDECIES[2], ROW_2_INDECIES[2], ROW_3_INDECIES[2], ROW_4_INDECIES[2]]
 COL_4_INDECIES = [ROW_1_INDECIES[3], ROW_2_INDECIES[3], ROW_3_INDECIES[3], ROW_4_INDECIES[3]]
+
+ROWS = [ROW_1_INDECIES,ROW_2_INDECIES,ROW_3_INDECIES,ROW_4_INDECIES]
 COLS = [COL_1_INDECIES,COL_2_INDECIES,COL_3_INDECIES,COL_4_INDECIES]
 
 UP_ORDER = []
@@ -75,7 +76,7 @@ class Threes():
     self.history = [
       {
         "state": self.board.serialState(),
-        "reward": self.board.scoreBoard()
+        "score": self.board.scoreBoard()
       }
     ]
 
@@ -106,15 +107,22 @@ class Threes():
     returnObs.worldState = self.board.serialState()
     returnObs.availableActions = self.board.possibleMoves()
 
+    self.history = [
+      {
+        "state": self.board.serialState(),
+        "score": self.board.scoreBoard()
+      }
+    ]
+
     return returnObs
 
   def env_step(self, action):
     self.previousState = self.board.serialState()
-    self.executeMove(action.actionValue)
+    self.executeMove(action)
 
     self.counter += 1
 
-    lastActionValue = action.actionValue
+    lastActionValue = action
     observation = Observation()
     observation.worldState = self.board.serialState()
     observation.availableActions = self.board.possibleMoves()
@@ -264,7 +272,7 @@ class Board():
       for tile in tiles:
         self[i].value = int(tile)
         i += 1
-        
+
   def serialState(self):
     state = []
     for i in range(0,NUM_TILES):

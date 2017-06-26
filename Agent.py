@@ -3,7 +3,6 @@ import sys
 import copy
 import operator
 from Observation import *
-from Reward import *
 from Action import *
 from Environment import *
 from random import Random
@@ -12,7 +11,7 @@ import time
 
 class Agent:
   # Remember last action
-  lastAction=Action()
+  lastAction=-1
 
   # Remember last observation (state)
   lastObservation=Observation()
@@ -54,7 +53,7 @@ class Agent:
     self.v_table={}
 
     # Set dummy action and observation
-    self.lastAction=Action()
+    self.lastAction=-1
     self.lastObservation=Observation()
 
     # Set the environment
@@ -104,18 +103,17 @@ class Agent:
 
     # While a terminal state has not been hit and the counter hasn't expired, take the best action for the current state
     while not self.workingObservation.isTerminal and count < self.numSteps:
-      newAction = Action()
       # Get the best action for this state
-      newAction.actionValue = self.greedy(self.workingObservation)
-      history.append((newAction.actionValue, self.workingObservation.worldState))
+      newAction = self.greedy(self.workingObservation)
+      history.append((newAction, self.workingObservation.worldState))
 
       if writeFile:
         outputfile.write("state: " + str(self.workingObservation.worldState) + "\n")
-        outputfile.write("action: " + str(newAction.actionValue) + "\n")
+        outputfile.write("action: " + str(newAction) + "\n")
 
       if self.isVerbose():
         print "state:", self.workingObservation.worldState
-        print "bot action:", self.gridEnvironment.actionToString(newAction.actionValue)
+        print "bot action:", self.gridEnvironment.actionToString(newAction)
 
       # execute the step and get a new observation and reward
       currentObs, reward = self.gridEnvironment.env_step(newAction)
@@ -163,9 +161,8 @@ class Agent:
       self.initializeVtableStateEntry(self.workingObservation.worldState)
 
       # Take the epsilon-greedy action
-      newAction = Action()
-      newAction.actionValue = self.egreedy(self.workingObservation)
-      lastAction = newAction.actionValue
+      newAction = self.egreedy(self.workingObservation)
+      lastAction = newAction
 
       # Get the new state and reward from the environment
       currentObs, reward = self.gridEnvironment.env_step(newAction)
@@ -177,7 +174,7 @@ class Agent:
       # update the value table
       lastFlatState = self.calculateFlatState(self.workingObservation.worldState)
       newFlatState = self.calculateFlatState(currentObs.worldState)
-      self.updateVtable(newFlatState, lastFlatState, newAction.actionValue, rewardValue, currentObs.isTerminal, currentObs.availableActions)
+      self.updateVtable(newFlatState, lastFlatState, newAction, rewardValue, currentObs.isTerminal, currentObs.availableActions)
 
       # increment counter
       count = count + 1
@@ -273,7 +270,7 @@ class Agent:
 
   # Reset the agent
   def agent_reset(self):
-    self.lastAction = Action()
+    self.lastAction = -1
     self.lastObservation = Observation()
     self.initialObs = self.gridEnvironment.env_start()
 

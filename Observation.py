@@ -15,4 +15,3 @@ class Observation:
 
     if isTerminal != None:
       self.isTerminal = isTerminal
-

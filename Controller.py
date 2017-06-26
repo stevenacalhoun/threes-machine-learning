@@ -1,6 +1,5 @@
 import sys
 from Observation import *
-from Reward import *
 from Action import *
 from Agent import *
 from ThreesGame import *
