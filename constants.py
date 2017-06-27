@@ -7,6 +7,7 @@ RIGHT = 'Right'
 DOWN = 'Down'
 LEFT = 'Left'
 ALL_MOVES = [UP,RIGHT,DOWN,LEFT]
+NUM_ACTIONS = len(ALL_MOVES)
 
 ROW_1_INDECIES = [0,  1,  2,  3]
 ROW_2_INDECIES = [4,  5,  6,  7]

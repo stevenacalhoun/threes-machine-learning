@@ -15,48 +15,36 @@ trainingReportRate = 10
 # Max reward received in any iteration
 maxr = None
 largestVal = None
-
-# Set up environment for initial training
-gridEnvironment = Threes()
-gridEnvironment.verbose = 0
+largestCount = 0
 
 # Set up agent
-gridAgent = Agent(gridEnvironment)
-gridAgent.verbose = False
+gridAgent = Agent(Threes())
 
 # This is where learning happens
 for i in range(episodes):
   # Train
   gridAgent.agent_reset()
-  gridAgent.qLearn(gridAgent.initialObs)
+  gridAgent.qLearn()
 
   # Test
   gridAgent.agent_reset()
-  gridAgent.executePolicy(gridAgent.initialObs)
+  gridAgent.executePolicy()
 
-  # Report
-  totalr = gridAgent.totalReward
-  currentLargestVal = gridAgent.gridEnvironment.board.getLargestVal()
+  if gridAgent.count > largestCount:
+    largestCount = gridAgent.count
 
-  if currentLargestVal > largestVal:
-    largestVal = currentLargestVal
+  if gridAgent.gridEnvironment.board.getLargestVal() > largestVal:
+    largestVal = gridAgent.gridEnvironment.board.getLargestVal()
 
-
-  if maxr == None or totalr > maxr:
-    maxr = totalr
+  if maxr == None or gridAgent.totalReward > maxr:
+    maxr = gridAgent.totalReward
     print gridAgent.gridEnvironment.board
-    print "max reward:", maxr, " largest val ", largestVal
+    print "max reward:", maxr, " largest val ", largestVal, " largest count: ", largestCount
 
   if i % trainingReportRate == 0:
     print "iteration:", i
 
-# Reset the environment for policy execution
-gridEnvironment.verbose = 0
-gridEnvironment.randomStart = False
-gridEnvironment.enemyMode = 1
-gridAgent.verbose = True
-
 print "Execute Policy"
 gridAgent.agent_reset()
-gridAgent.executePolicy(gridAgent.initialObs, writeFile=True)
+gridAgent.executePolicy(writeFile=True)
 print "total reward", gridAgent.totalReward

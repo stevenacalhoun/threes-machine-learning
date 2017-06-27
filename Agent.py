@@ -8,51 +8,29 @@ from random import Random
 import datetime
 import time
 
+from constants import *
+
 class Agent:
-  # Remember last action
-  lastAction=-1
-
-  # Remember last observation (state)
-  lastObservation=Observation()
-
   # Q-learning stuff: Step size, epsilon, gamma, learning rate
   epsilon = 0.5
   gamma = 0.9
   learningRate = 1.0
-
-  # Value table
-  v_table = None
-
-  # The environment
-  gridEnvironment = None
-
-  #Initial observation
-  initialObs = None
-
-  #Current observation
-  currentObs = None
-
-  # The training or testing episdoe will run for no more than this many time steps
   numSteps = 100000
+
+  # Observation tracking
+  currentObs = None
+  lastObservation=Observation()
 
   # Total reward
   totalReward = 0.0
-
-  # Print debugging statements
-  verbose = False
-  verboseOverride = False
-
-  # Number of actions in the environment
-  numActions = 4
+  count = 0
 
   # Constructor, takes a reference to an Environment
   def __init__(self, env):
-
     # Initialize value table
     self.v_table={}
 
     # Set dummy action and observation
-    self.lastAction=-1
     self.lastObservation=Observation()
 
     # Set the environment
@@ -64,12 +42,12 @@ class Agent:
 
   # Make an empty row in the v table with the state as key.
   def initializeVtableStateEntry(self, state):
-    if self.calculateFlatState(state) not in self.v_table.keys():
-      self.v_table[self.calculateFlatState(state)] = self.numActions*[0.0]
+    if tuple(state) not in self.v_table.keys():
+      self.v_table[tuple(state)] = NUM_ACTIONS*[0.0]
 
   # Once learning is done, use this to run the agent
   # observation is the initial observation
-  def executePolicy(self, observation, writeFile=False):
+  def executePolicy(self, writeFile=False):
     if writeFile:
       dateString = str(datetime.datetime.now().isoformat())
       dateString = dateString.replace("-","_")
@@ -80,12 +58,15 @@ class Agent:
 
     # History stores up list of actions executed
     history = []
+
     # Start the counter
-    count = 0
+    self.count = 0
+
     # reset total reward
     self.totalReward = 0.0
+
     # Copy the initial observation
-    self.workingObservation = self.copyObservation(observation)
+    self.workingObservation = self.copyObservation(self.initialObs)
 
     # Make sure the value table has the starting observation
     self.initializeVtableStateEntry(self.workingObservation.worldState)
@@ -95,13 +76,8 @@ class Agent:
       outputfile.write("LR:" + str(self.learningRate) + "\n")
       outputfile.write("Gamma:" + str(self.gamma) + "\n\n")
 
-    if self.isVerbose():
-      print("START")
-      print("LR:" + str(self.learningRate))
-      print("Gamma:" + str(self.gamma))
-
     # While a terminal state has not been hit and the counter hasn't expired, take the best action for the current state
-    while not self.workingObservation.isTerminal and count < self.numSteps:
+    while not self.workingObservation.isTerminal and self.count < self.numSteps:
       # Get the best action for this state
       newAction = self.greedy(self.workingObservation)
       history.append((newAction, self.workingObservation.worldState))
@@ -109,10 +85,6 @@ class Agent:
       if writeFile:
         outputfile.write("state: " + str(self.workingObservation.worldState) + "\n")
         outputfile.write("action: " + str(newAction) + "\n")
-
-      if self.isVerbose():
-        print "state:", self.workingObservation.worldState
-        print "bot action:", self.gridEnvironment.actionToString(newAction)
 
       # execute the step and get a new observation and reward
       currentObs, reward = self.gridEnvironment.env_step(newAction)
@@ -122,98 +94,76 @@ class Agent:
         outputfile.write(str(self.gridEnvironment)+"\n")
         outputfile.write("\n")
 
-      if self.isVerbose():
-        print "reward:", reward
-        print "total reward:" + str(self.totalReward + reward)
-
       self.totalReward = self.totalReward + reward
       self.workingObservation = copy.deepcopy(currentObs)
 
       # increment counter
-      count = count + 1
+      self.count += 1
 
     if writeFile:
       outputfile.write("END")
 
-    if self.isVerbose():
-      print("END")
     return history
 
   # q-learning implementation
-  # observation is the initial observation
-  def qLearn(self, observation):
+  def qLearn(self):
     # copy the initial observation
-    self.workingObservation = self.copyObservation(observation)
+    self.workingObservation = self.copyObservation(self.initialObs)
 
     # start the counter
-    count = 0
-
-    lastAction = -1
+    self.count = 0
 
     # reset total reward
     self.totalReward = 0.0
 
     # while terminal state not reached and counter hasn't expired, use epsilon-greedy search
-    while not self.workingObservation.isTerminal and count < self.numSteps:
+    while not self.workingObservation.isTerminal and self.count < self.numSteps:
 
       # Make sure table is populated correctly
       self.initializeVtableStateEntry(self.workingObservation.worldState)
 
       # Take the epsilon-greedy action
-      newAction = self.egreedy(self.workingObservation)
-      lastAction = newAction
-
-      # Get the new state and reward from the environment
-      currentObs, reward = self.gridEnvironment.env_step(newAction)
-      rewardValue = reward
+      nextAction = self.egreedy(self.workingObservation)
+      currentObs, reward = self.gridEnvironment.env_step(nextAction)
 
       # Make sure table is populated correctly
       self.initializeVtableStateEntry(currentObs.worldState)
 
       # update the value table
-      lastFlatState = self.calculateFlatState(self.workingObservation.worldState)
-      newFlatState = self.calculateFlatState(currentObs.worldState)
-      self.updateVtable(newFlatState, lastFlatState, newAction, rewardValue, currentObs.isTerminal, currentObs.availableActions)
+      self.updateVtable(
+        tuple(currentObs.worldState),
+        tuple(self.workingObservation.worldState),
+        nextAction,
+        reward,
+        currentObs.isTerminal,
+        currentObs.availableActions
+      )
 
-      # increment counter
-      count = count + 1
       self.workingObservation = self.copyObservation(currentObs)
 
-      # increment total reward
-      self.totalReward = self.totalReward + reward
+      self.count += 1
+      self.totalReward += reward
 
     # Done learning, reset environment
     self.gridEnvironment.env_reset()
 
   ### Update the v_table during q-learning.
-  ### newState: the new state reached after performing newAction in lastState.
-  ### lastState: the prior state
-  ### action: the action just performed
-  ### reward: the amount of reward received upon transitioning to newState with newAction
-  ### terminal: boolean: is the newState a terminal state?
-  ### availableActions: a list of actions that can be performed in newState.
-  ###
-  ### Update Q(s, a) in v_table for lastState and lastAction.
   def updateVtable(self, newState, lastState, action, reward, terminal, availableActions):
-    # YOUR CODE GOES BELOW HERE
-
     r_tp1 = float(reward)
-    Q_st_at = float(self.v_table[self.calculateFlatState(lastState)][action])
+    Q_st_at = float(self.v_table[tuple(lastState)][action])
     lr = float(self.learningRate)
     y = float(self.gamma)
 
-    # Non terminal state
     # Q(st, at) = Q(st,at) + lr*(rt+1 + y*max(Q(st+1, a')) - Q(st, at))
     if not terminal:
       # Calculate all rewards for potential actions
       Q_stp1_a = []
       for potentialAction in availableActions:
-        Q_stp1_a.append(float(self.v_table[self.calculateFlatState(newState)][potentialAction]))
+        Q_stp1_a.append(float(self.v_table[tuple(newState)][potentialAction]))
 
       # Calculate new val
       newVal = Q_st_at + lr*(r_tp1 + y*max(Q_stp1_a) - Q_st_at)
 
-    # Terminal state
     # Q(st, at) = Q(st, at) + lr*(rt+1 - Q(st,at))
     else:
 
@@ -221,55 +171,41 @@ class Agent:
       newVal = Q_st_at + lr*(r_tp1 - Q_st_at)
 
     # Update vtable
-    self.v_table[self.calculateFlatState(lastState)][action] = newVal
+    self.v_table[tuple(lastState)][action] = newVal
 
-    # YOUR CODE GOES ABOVE HERE
-    return None
-
-  ### Return the best action according to the policy, or a random action epsilon percent of the time.
-  ### observation: the current observation (state)
-  ###
-  ### If a random number between [0, 1] is less than epsilon, pick a random action from avaialbe actions.
-  ### Otherwise: pick the action for the current state that has the highest Q value.
-  ### Return the index of the action picked.
   def egreedy(self, observation):
-    # YOUR CODE GOES BELOW HERE
+    self.initializeVtableStateEntry(observation.worldState)
+
+    # Mark impossible moves
+    impossibleMoves = self.gridEnvironment.board.impossibleMoves()
+    for impossibleMove in impossibleMoves:
+      self.v_table[tuple(observation.worldState)][impossibleMove] = -1
 
     # Choose random action
+    possibleMoves = self.gridEnvironment.board.possibleMoves()
     if random.uniform(0,1) < self.epsilon:
-      return random.randint(0,self.numActions-1)
+      return random.choice(possibleMoves)
 
     # Choose greedy option
     else:
       return self.greedy(observation)
 
-    # YOUR CODE GOES ABOVE HERE
-    return 0
-
-  ### Return the best action according to the policy
-  ### observation: the current observation (state)
-  ###
-  ### Pick  the action for the current state that has the highest Q value.
-  ### Return the index of the action picked.
   def greedy(self, observation):
     self.initializeVtableStateEntry(observation.worldState)
-    # YOUR CODE GOES BELOW HERE
+
+    # Mark impossible moves
+    impossibleMoves = self.gridEnvironment.board.impossibleMoves()
+    for impossibleMove in impossibleMoves:
+      self.v_table[tuple(observation.worldState)][impossibleMove] = -1
 
     rewards = []
-    for actionVal in range(0,self.numActions):
-      rewards.append(self.v_table[self.calculateFlatState(observation.worldState)][actionVal])
+    for actionVal in range(0, NUM_ACTIONS):
+      rewards.append(self.v_table[tuple(observation.worldState)][actionVal])
 
-    for i,actionVal in enumerate(rewards):
-      if not self.gridEnvironment.board.canMoveAV(i):
-        rewards[i] = -1
     return rewards.index(max(rewards))
-
-    # YOUR CODE GOES ABOVE HERE
-    return 0
 
   # Reset the agent
   def agent_reset(self):
-    self.lastAction = -1
     self.lastObservation = Observation()
     self.initialObs = self.gridEnvironment.env_start()
 
@@ -286,15 +222,6 @@ class Agent:
       returnObs.isTerminal = obs.isTerminal
 
     return returnObs
-
-  # Turn the state into a tuple for bookkeeping
-  def calculateFlatState(self, theState):
-    return tuple(theState)
-
-  def isVerbose(self):
-    if isinstance(self.verbose, numbers.Number) and self.verbose == 0:
-      return False and self.verboseOverride
-    return self.verbose and self.verboseOverride
 
 class Observation:
   worldState = []

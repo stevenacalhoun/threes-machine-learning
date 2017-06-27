@@ -34,7 +34,6 @@ class Threes():
 
     self.previousState = []
     self.currentState = self.board.serialState()
-    self.counter = 0
 
     returnObs = Observation()
     returnObs.worldState = self.board.serialState()
@@ -54,8 +53,6 @@ class Threes():
   def env_step(self, action):
     self.previousState = self.board.serialState()
     self.executeMove(action)
-
-    self.counter += 1
 
     lastActionValue = action
     observation = Observation()
@@ -354,6 +351,13 @@ class Board():
       if self.canMove(move):
         moves.append(i)
     return moves
+
+  def impossibleMoves(self):
+    possibleMoves = self.possibleMoves()
+    impossibleMoves = [0,1,2,3]
+    for possibleMove in possibleMoves:
+      impossibleMoves.remove(possibleMove)
+    return impossibleMoves
 
 class Tile():
   def __init__(self, value=0):
