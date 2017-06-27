@@ -5,83 +5,16 @@ import time
 from math import log
 from math import pow
 
-from Observation import *
-from Action import *
+from Agent import *
 
-def printMoveMatrix(matrix):
-  strResp = ""
-  for i,bool in enumerate(matrix):
-    if i % 4==0:
-      strResp += "\n"
-    if bool:
-      strResp += "1 "
-    else:
-      strResp += "0 "
-  print strResp
-  print
-
-NUM_ROWS = 4
-NUM_COLS = 4
-NUM_TILES = NUM_COLS*NUM_ROWS
-
-UP = 'Up'
-RIGHT = 'Right'
-DOWN = 'Down'
-LEFT = 'Left'
-ALL_MOVES = [UP,RIGHT,DOWN,LEFT]
-
-ROW_1_INDECIES = [0,  1,  2,  3]
-ROW_2_INDECIES = [4,  5,  6,  7]
-ROW_3_INDECIES = [8,  9,  10, 11]
-ROW_4_INDECIES = [12, 13, 14, 15]
-
-COL_1_INDECIES = [ROW_1_INDECIES[0], ROW_2_INDECIES[0], ROW_3_INDECIES[0], ROW_4_INDECIES[0]]
-COL_2_INDECIES = [ROW_1_INDECIES[1], ROW_2_INDECIES[1], ROW_3_INDECIES[1], ROW_4_INDECIES[1]]
-COL_3_INDECIES = [ROW_1_INDECIES[2], ROW_2_INDECIES[2], ROW_3_INDECIES[2], ROW_4_INDECIES[2]]
-COL_4_INDECIES = [ROW_1_INDECIES[3], ROW_2_INDECIES[3], ROW_3_INDECIES[3], ROW_4_INDECIES[3]]
-
-ROWS = [ROW_1_INDECIES,ROW_2_INDECIES,ROW_3_INDECIES,ROW_4_INDECIES]
-COLS = [COL_1_INDECIES,COL_2_INDECIES,COL_3_INDECIES,COL_4_INDECIES]
-
-UP_ORDER = []
-UP_ORDER.extend(ROW_1_INDECIES)
-UP_ORDER.extend(ROW_2_INDECIES)
-UP_ORDER.extend(ROW_3_INDECIES)
-UP_ORDER.extend(ROW_4_INDECIES)
-
-DOWN_ORDER = []
-DOWN_ORDER.extend(ROW_4_INDECIES)
-DOWN_ORDER.extend(ROW_3_INDECIES)
-DOWN_ORDER.extend(ROW_2_INDECIES)
-DOWN_ORDER.extend(ROW_1_INDECIES)
-
-LEFT_ORDER = []
-LEFT_ORDER.extend(COL_1_INDECIES)
-LEFT_ORDER.extend(COL_2_INDECIES)
-LEFT_ORDER.extend(COL_3_INDECIES)
-LEFT_ORDER.extend(COL_4_INDECIES)
-
-RIGHT_ORDER = []
-RIGHT_ORDER.extend(COL_4_INDECIES)
-RIGHT_ORDER.extend(COL_3_INDECIES)
-RIGHT_ORDER.extend(COL_2_INDECIES)
-RIGHT_ORDER.extend(COL_1_INDECIES)
-
-STACK_OPTIONS = [1,1,1,1,2,2,2,2,3,3,3,3]
+from utils import *
+from constants import *
 
 class Threes():
   def __init__(self, printMode=0, writeBeginning=0):
-    self.board = Board()
+    self.env_start()
+
     self.printMode = printMode
-    self.history = [
-      {
-        "state": self.board.serialState(),
-        "score": self.board.scoreBoard()
-      }
-    ]
-
-    self.lastDirection = ""
-
     if printMode == 2:
       self.stdscr = curses.initscr()
       curses.cbreak()
@@ -113,6 +46,8 @@ class Threes():
         "score": self.board.scoreBoard()
       }
     ]
+
+    self.lastDirection = ""
 
     return returnObs
 
@@ -294,7 +229,6 @@ class Board():
       availableSpots.remove(tileIdx)
       self[tileIdx].value = val
 
-  # Choose an incoming number
   def getIncoming(self):
     val = self.stack.pop()
     if self.stack == []:
@@ -371,9 +305,9 @@ class Board():
     moveMatrix = self.moveMatrix(self.moveOptions[direction]["front_check"])
 
     if direction == UP or direction == DOWN:
-      return self.sat(COLS, moveMatrix)
+      return sat(COLS, moveMatrix)
     else:
-      return self.sat(ROWS, moveMatrix)
+      return sat(ROWS, moveMatrix)
 
   def canMoveAV(self, direction):
     return self.canMove(ALL_MOVES[int(direction)])
@@ -388,29 +322,17 @@ class Board():
 
     return boolVals
 
-  def sat(self, sections, matrix):
-    for section in sections:
-      if matrix[section[0]] or matrix[section[1]] or matrix[section[2]] or matrix[section[3]]:
-        return True
-    return False
-
-  def getTileInFront(self, idx, invalidTiles, offset):
-    if idx in invalidTiles:
-      return None
-    else:
-      return idx+offset
-
   def getTileIdxAbove(self, idx):
-    return self.getTileInFront(idx, ROW_1_INDECIES, -NUM_COLS)
+    return calculateTileInFront(idx, ROW_1_INDECIES, -NUM_COLS)
 
   def getTileIdxRight(self, idx):
-    return self.getTileInFront(idx, COL_4_INDECIES, 1)
+    return calculateTileInFront(idx, COL_4_INDECIES, 1)
 
   def getTileIdxBelow(self, idx):
-    return self.getTileInFront(idx, ROW_4_INDECIES, NUM_COLS)
+    return calculateTileInFront(idx, ROW_4_INDECIES, NUM_COLS)
 
   def getTileIdxLeft(self, idx):
-    return self.getTileInFront(idx, COL_1_INDECIES, -1)
+    return calculateTileInFront(idx, COL_1_INDECIES, -1)
 
   def getLargestVal(self):
     largestVal = -1
@@ -465,14 +387,6 @@ class Tile():
     elif (self.canCombineWith(tileInFront)):
       return True
     return False
-
-def blankSpace():
-  blankSpaces = ""
-  for i in range(0,10):
-    for j in range(0,20):
-      blankSpaces += " "
-    blankSpaces += "\n"
-  return blankSpaces
 
 def main():
   writeBeginning = 1

@@ -2,7 +2,6 @@ import random
 import sys
 import copy
 import operator
-from Observation import *
 from Action import *
 from Environment import *
 from random import Random
@@ -296,3 +295,21 @@ class Agent:
     if isinstance(self.verbose, numbers.Number) and self.verbose == 0:
       return False and self.verboseOverride
     return self.verbose and self.verboseOverride
+
+class Observation:
+  worldState = []
+  availableActions = []
+  hierarchy = {}
+  isTerminal = None
+  def __init__(self, state=None, actions=None, hierarchy=None, isTerminal=None):
+    if state != None:
+      self.worldState = state
+
+    if actions != None:
+      self.availableActions = actions
+
+    if hierarchy != None:
+      self.hierarchy = hierarchy
+
+    if isTerminal != None:
+      self.isTerminal = isTerminal
