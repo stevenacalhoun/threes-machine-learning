@@ -5,7 +5,7 @@ import time
 from math import log
 from math import pow
 
-from Agent import *
+from mlAgent import *
 
 from utils import *
 from constants import *
@@ -391,16 +391,3 @@ class Tile():
     elif (self.canCombineWith(tileInFront)):
       return True
     return False
-
-def main():
-  writeBeginning = 1
-
-  continuePlaying = True
-  while continuePlaying:
-    game = Threes(writeBeginning=writeBeginning, printMode=1)
-    game.play()
-    writeBeginning += 10
-  print
-
-if __name__ == "__main__":
-  main()
