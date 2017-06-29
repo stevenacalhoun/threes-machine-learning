@@ -1,3 +1,5 @@
+import curses
+
 def blankSpace():
   blankSpaces = ""
   for i in range(0,10):
@@ -17,3 +19,12 @@ def calculateTileInFront(idx, invalidTiles, offset):
     return None
   else:
     return idx+offset
+
+class InlinePrinter():
+  def __init__(self):
+    self.stdscr = curses.initscr()
+    curses.cbreak()
+
+  def printLine(self, line, data):
+    self.stdscr.addstr(line, 0, data)
+    self.stdscr.refresh()

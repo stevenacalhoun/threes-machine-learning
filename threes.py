@@ -12,7 +12,7 @@ from constants import *
 
 class Threes():
   def __init__(self, printMode=0, writeBeginning=0):
-    self.env_start()
+    self.envStart()
 
     self.printMode = printMode
     if printMode == 2:
@@ -29,7 +29,7 @@ class Threes():
 
     return returnStr
 
-  def env_start(self):
+  def envStart(self):
     self.board = Board()
 
     self.previousState = []
@@ -50,7 +50,7 @@ class Threes():
 
     return returnObs
 
-  def env_step(self, action):
+  def envStep(self, action):
     self.previousState = self.board.serialState()
     self.executeMove(action)
 
@@ -64,13 +64,13 @@ class Threes():
 
     return observation, reward
 
-  def env_reset(self):
-    self.env_start()
+  def envReset(self):
+    self.envStart()
 
   def printOutput(self):
     if self.printMode == 1:
-      print self
-      print
+      print(self)
+      print ()
     elif self.printMode == 2:
       self.stdscr.addstr(self.writeBeginning,0,blankSpace())
       self.stdscr.addstr(self.writeBeginning,0,str(self))
@@ -78,16 +78,16 @@ class Threes():
       self.stdscr.refresh()
 
   def printDebugInfo(self):
-    print "Move matrix for all dirs"
+    print("Move matrix for all dirs")
     for direction in ALL_MOVES:
-      print direction
+      print(direction)
       printStr = ""
       matrix = self.board.moveMatrix(self.board.moveOptions[direction]["front_check"])
       for i, val in enumerate(matrix):
         printStr += str(int(val))
         if i % 4 == 3:
           printStr += "\n"
-      print printStr
+      print(printStr)
 
   def getInput(self):
     if self.printMode == 1:
@@ -161,7 +161,7 @@ class Threes():
           break
 
     if self.printMode == 1:
-      print "Game Over"
+      print("Game Over")
     elif self.printMode == 2:
       self.stdscr.addstr(self.writeBeginning+8, 0, "Game Over")
       curses.endwin()

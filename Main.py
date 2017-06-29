@@ -30,7 +30,7 @@ def main():
   elif args.m == "p":
     playMode()
   else:
-    print "Need to select a mode"
+    print("Need to select a mode")
 
 if __name__ == "__main__":
   main()

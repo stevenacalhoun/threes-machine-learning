@@ -1,10 +1,6 @@
 import random
-import sys
 import copy
-import operator
-from random import Random
 import datetime
-import time
 
 from constants import *
 
@@ -26,10 +22,10 @@ class Observation:
     if isTerminal != None:
       self.isTerminal = isTerminal
 
-class Agent:
+class MLAgent:
   # Q-learning stuff: Step size, epsilon, gamma, learning rate
   epsilon = 0.5
-  gamma = 0.9
+  gamma = 0.99
   learningRate = 1.0
   numSteps = 100000
 
@@ -44,7 +40,7 @@ class Agent:
   # Constructor, takes a reference to an Environment
   def __init__(self, env):
     # Initialize value table
-    self.v_table={}
+    self.vTable={}
 
     # Set dummy action and observation
     self.lastObservation=Observation()
@@ -53,13 +49,13 @@ class Agent:
     self.gridEnvironment = env
 
     # Get first observation and start the environment
-    self.initialObs = self.gridEnvironment.env_start()
+    self.initialObs = self.gridEnvironment.envStart()
     self.initializeVtableStateEntry(self.initialObs.worldState)
 
   # Make an empty row in the v table with the state as key.
   def initializeVtableStateEntry(self, state):
-    if tuple(state) not in self.v_table.keys():
-      self.v_table[tuple(state)] = NUM_ACTIONS*[0.0]
+    if tuple(state) not in self.vTable.keys():
+      self.vTable[tuple(state)] = NUM_ACTIONS*[0.0]
 
   # Once learning is done, use this to run the agent
   # observation is the initial observation
@@ -103,7 +99,7 @@ class Agent:
         outputfile.write("action: " + str(newAction) + "\n")
 
       # execute the step and get a new observation and reward
-      currentObs, reward = self.gridEnvironment.env_step(newAction)
+      currentObs, reward = self.gridEnvironment.envStep(newAction)
       if writeFile:
         outputfile.write("reward:" + str(reward) + "\n")
         outputfile.write("total reward:" + str(self.totalReward + reward) + "\n")
@@ -140,7 +136,7 @@ class Agent:
 
       # Take the epsilon-greedy action
       nextAction = self.egreedy(self.workingObservation)
-      currentObs, reward = self.gridEnvironment.env_step(nextAction)
+      currentObs, reward = self.gridEnvironment.envStep(nextAction)
 
       # Make sure table is populated correctly
       self.initializeVtableStateEntry(currentObs.worldState)
@@ -161,12 +157,12 @@ class Agent:
       self.totalReward += reward
 
     # Done learning, reset environment
-    self.gridEnvironment.env_reset()
+    self.gridEnvironment.envReset()
 
-  ### Update the v_table during q-learning.
+  ### Update the vTable during q-learning.
   def updateVtable(self, newState, lastState, action, reward, terminal, availableActions):
     r_tp1 = float(reward)
-    Q_st_at = float(self.v_table[tuple(lastState)][action])
+    Q_st_at = float(self.vTable[tuple(lastState)][action])
     lr = float(self.learningRate)
     y = float(self.gamma)
 
@@ -175,7 +171,7 @@ class Agent:
       # Calculate all rewards for potential actions
       Q_stp1_a = []
       for potentialAction in availableActions:
-        Q_stp1_a.append(float(self.v_table[tuple(newState)][potentialAction]))
+        Q_stp1_a.append(float(self.vTable[tuple(newState)][potentialAction]))
 
       # Calculate new val
       newVal = Q_st_at + lr*(r_tp1 + y*max(Q_stp1_a) - Q_st_at)
@@ -187,7 +183,7 @@ class Agent:
       newVal = Q_st_at + lr*(r_tp1 - Q_st_at)
 
     # Update vtable
-    self.v_table[tuple(lastState)][action] = newVal
+    self.vTable[tuple(lastState)][action] = newVal
 
   def egreedy(self, observation):
     self.initializeVtableStateEntry(observation.worldState)
@@ -195,7 +191,7 @@ class Agent:
     # Mark impossible moves
     impossibleMoves = self.gridEnvironment.board.impossibleMoves()
     for impossibleMove in impossibleMoves:
-      self.v_table[tuple(observation.worldState)][impossibleMove] = -1
+      self.vTable[tuple(observation.worldState)][impossibleMove] = -1
 
     # Choose random action
     possibleMoves = self.gridEnvironment.board.possibleMoves()
@@ -212,18 +208,18 @@ class Agent:
     # Mark impossible moves
     impossibleMoves = self.gridEnvironment.board.impossibleMoves()
     for impossibleMove in impossibleMoves:
-      self.v_table[tuple(observation.worldState)][impossibleMove] = -1
+      self.vTable[tuple(observation.worldState)][impossibleMove] = -1
 
     rewards = []
     for actionVal in range(0, NUM_ACTIONS):
-      rewards.append(self.v_table[tuple(observation.worldState)][actionVal])
+      rewards.append(self.vTable[tuple(observation.worldState)][actionVal])
 
     return rewards.index(max(rewards))
 
   # Reset the agent
-  def agent_reset(self):
+  def agentReset(self):
     self.lastObservation = Observation()
-    self.initialObs = self.gridEnvironment.env_start()
+    self.initialObs = self.gridEnvironment.envStart()
 
   # Create a copy of the observation
   def copyObservation(self, obs):

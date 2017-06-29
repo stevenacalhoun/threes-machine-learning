@@ -1,47 +1,55 @@
-import sys
 from mlAgent import *
 from threes import *
-import numpy
-import time
+from utils import *
 
 class MLController():
   def __init__(self):
-    self.trainingEpisodes = 10
-    self.trainingReportRate = 1
+    self.trainingEpisodes = 1000
+    self.trainingReportRate = 100
 
-    self.largestReward = 0
-    self.largestBoardValue = 0
     self.largestMoveCount = 0
+    self.largestReward = 0
 
-    self.gridAgent = Agent(Threes())
+    self.printer = InlinePrinter()
+
+    self.mlAgent = MLAgent(Threes())
 
   def runLearning(self):
-    # This is where learning happens
     for i in range(self.trainingEpisodes):
+      # Print iteration info
+      self.printer.printLine(0,"Iteration: " + str(i))
+      self.printer.printLine(1,"Highest Moves: " + str(self.largestMoveCount))
+
       # Train
-      self.gridAgent.agent_reset()
-      self.gridAgent.qLearn()
+      self.mlAgent.agentReset()
+      self.mlAgent.qLearn()
 
-      # Test
-      self.gridAgent.agent_reset()
-      self.gridAgent.executePolicy()
+      if self.mlAgent.count > self.largestMoveCount:
+        self.largestMoveCount = self.mlAgent.count
 
-      if self.gridAgent.count > self.largestMoveCount:
-        self.largestMoveCount = self.gridAgent.count
-
-      if self.gridAgent.gridEnvironment.board.getLargestVal() > self.largestBoardValue:
-        self.largestBoardValue = self.gridAgent.gridEnvironment.board.getLargestVal()
-
-      if self.largestReward == None or self.gridAgent.totalReward > self.largestReward:
-        self.largestReward = self.gridAgent.totalReward
-        print self.gridAgent.gridEnvironment.board
-        print "max reward:", self.largestReward, " largest val ", self.largestBoardValue, " largest count: ", self.largestMoveCount
-
+      # Report a test
       if i % self.trainingReportRate == 0:
-        print "iteration:", i
+        self.testPolicy()
+
+  def testPolicy(self):
+    # Test
+    self.mlAgent.agentReset()
+    self.mlAgent.executePolicy()
+
+    if self.mlAgent.count > self.largestMoveCount:
+      self.largestMoveCount = self.mlAgent.count
+
+    # Update best board
+    if self.mlAgent.totalReward > self.largestReward:
+      self.largestReward = self.mlAgent.totalReward
+
+      # Best board
+
+      self.printer.printLine(3, "Best Board")
+      self.printer.printLine(4, str(self.mlAgent.gridEnvironment.board))
+      self.printer.printLine(10, "Moves: " + str(self.mlAgent.count))
 
   def executeFinal(self):
-    print "Execute Policy"
-    self.gridAgent.agent_reset()
-    self.gridAgent.executePolicy(writeFile=True)
-    print "total reward", self.gridAgent.totalReward
+    # Execute one last time and write to file
+    self.mlAgent.agentReset()
+    self.mlAgent.executePolicy(writeFile=True)
