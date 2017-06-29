@@ -18,7 +18,8 @@ class MLController():
     for i in range(self.trainingEpisodes):
       # Print iteration info
       self.printer.printLine(0,"Iteration: " + str(i))
-      self.printer.printLine(1,"Highest Moves: " + str(self.largestMoveCount))
+      self.printer.printLine(1,"V Table size: " + str(len(self.mlAgent.vTable)))
+      self.printer.printLine(2,"Highest Moves: " + str(self.largestMoveCount))
 
       # Train
       self.mlAgent.agentReset()
@@ -44,10 +45,9 @@ class MLController():
       self.largestReward = self.mlAgent.totalReward
 
       # Best board
-
-      self.printer.printLine(3, "Best Board")
-      self.printer.printLine(4, str(self.mlAgent.gridEnvironment.board))
-      self.printer.printLine(10, "Moves: " + str(self.mlAgent.count))
+      self.printer.printLine(4, "Best Board")
+      self.printer.printLine(5, str(self.mlAgent.gridEnvironment.board))
+      self.printer.printLine(11, "Moves: " + str(self.mlAgent.count))
 
   def executeFinal(self):
     # Execute one last time and write to file
