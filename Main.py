@@ -1,9 +1,16 @@
 from threes import *
 from mlController import *
 
+import subprocess
+import curses
+import signal
 import argparse
+import sys
+
+mlController = None
 
 def mlMode():
+  global mlController
   mlController = MLController()
 
   # Learn and execute
@@ -32,5 +39,14 @@ def main():
   else:
     print("Need to select a mode")
 
+def exitGraceful(signal, frame):
+  global mlController
+  if mlController:
+    mlController.executeFinal()
+
+  curses.endwin()
+  sys.exit(0)
+
 if __name__ == "__main__":
   main()
+  curses.endwin()
