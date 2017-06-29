@@ -1,4 +1,5 @@
 import curses
+import datetime
 
 def blankSpace():
   blankSpaces = ""
@@ -19,6 +20,17 @@ def calculateTileInFront(idx, invalidTiles, offset):
     return None
   else:
     return idx+offset
+
+def createTimeStampedFile(dir,ext="txt"):
+  dateString = str(datetime.datetime.now().isoformat())
+  dateString = dateString.replace("-","_")
+  dateString = dateString.split(".")[0]
+  dateString = dateString.replace(":",".")
+  dateString = dateString.replace("T", "-")
+
+  outputfile = open(dir + "/" + dateString + "." + ext, "w+")
+
+  return outputfile
 
 class InlinePrinter():
   def __init__(self):

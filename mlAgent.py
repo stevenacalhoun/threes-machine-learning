@@ -3,6 +3,7 @@ import copy
 import datetime
 
 from constants import *
+from utils import *
 
 class Observation:
   worldState = []
@@ -25,9 +26,10 @@ class Observation:
 class MLAgent:
   # Q-learning stuff: Step size, epsilon, gamma, learning rate
   epsilon = 0.5
+  numSteps = 100000
+
   gamma = 0.99
   learningRate = 1.0
-  numSteps = 100000
 
   # Observation tracking
   currentObs = None
@@ -38,9 +40,9 @@ class MLAgent:
   count = 0
 
   # Constructor, takes a reference to an Environment
-  def __init__(self, env):
+  def __init__(self, env, vTable):
     # Initialize value table
-    self.vTable={}
+    self.vTable = vTable
 
     # Set dummy action and observation
     self.lastObservation=Observation()
@@ -61,12 +63,7 @@ class MLAgent:
   # observation is the initial observation
   def executePolicy(self, writeFile=False):
     if writeFile:
-      dateString = str(datetime.datetime.now().isoformat())
-      dateString = dateString.replace("-","_")
-      dateString = dateString.split(".")[0]
-      dateString = dateString.replace(":",".")
-      dateString = dateString.replace("T", "-")
-      outputfile = open("output/" + dateString + ".txt", "w+")
+      outputfile = createTimeStampedFile("output")
 
     # History stores up list of actions executed
     history = []

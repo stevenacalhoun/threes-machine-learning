@@ -1,9 +1,10 @@
 from mlAgent import *
 from threes import *
 from utils import *
+import pickle
 
 class MLController():
-  def __init__(self):
+  def __init__(self, vTable={}):
     self.trainingEpisodes = 1000
     self.trainingReportRate = 100
 
@@ -11,14 +12,14 @@ class MLController():
     self.largestReward = 0
 
     self.printer = InlinePrinter()
-
-    self.mlAgent = MLAgent(Threes())
+    self.mlAgent = MLAgent(Threes(), vTable)
+    self.startVtableSize = len(self.mlAgent.vTable)
 
   def runLearning(self):
     for i in range(self.trainingEpisodes):
       # Print iteration info
       self.printer.printLine(0,"Iteration: " + str(i))
-      self.printer.printLine(1,"V Table size: " + str(len(self.mlAgent.vTable)))
+      self.printer.printLine(1,"V Table size: " + str(self.startVtableSize) + "->" + str(len(self.mlAgent.vTable)))
       self.printer.printLine(2,"Highest Moves: " + str(self.largestMoveCount))
 
       # Train
@@ -53,3 +54,8 @@ class MLController():
     # Execute one last time and write to file
     self.mlAgent.agentReset()
     self.mlAgent.executePolicy(writeFile=True)
+
+    # Write vTable to start from later
+    outputfile = createTimeStampedFile("vTables", ext="data")
+    pickle.dump(self.mlAgent.vTable, outputfile)
+    outputfile.close()
