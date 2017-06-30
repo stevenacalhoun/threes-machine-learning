@@ -23,7 +23,6 @@ class MLController():
       self.printer.printLine(2,"Highest Moves: " + str(self.largestMoveCount))
 
       # Train
-      self.mlAgent.agentReset()
       self.mlAgent.qLearn()
 
       if self.mlAgent.count > self.largestMoveCount:
@@ -35,7 +34,6 @@ class MLController():
 
   def testPolicy(self):
     # Test
-    self.mlAgent.agentReset()
     self.mlAgent.executePolicy()
 
     if self.mlAgent.count > self.largestMoveCount:
@@ -47,12 +45,11 @@ class MLController():
 
       # Best board
       self.printer.printLine(4, "Best Board")
-      self.printer.printLine(5, str(self.mlAgent.gridEnvironment.board))
+      self.printer.printLine(5, str(self.mlAgent.gameEnv.board))
       self.printer.printLine(11, "Moves: " + str(self.mlAgent.count))
 
   def executeFinal(self):
     # Execute one last time and write to file
-    self.mlAgent.agentReset()
     self.mlAgent.executePolicy(writeFile=True)
 
     # Write vTable to start from later

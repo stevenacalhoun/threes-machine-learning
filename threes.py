@@ -12,7 +12,7 @@ from constants import *
 
 class Threes():
   def __init__(self, printMode=0, writeBeginning=0):
-    self.envStart()
+    self.start()
 
     self.printMode = printMode
     if printMode == 2:
@@ -29,14 +29,10 @@ class Threes():
 
     return returnStr
 
-  def envStart(self):
+  def start(self):
     self.board = Board()
 
-    self.previousState = []
     self.currentState = self.board.serialState()
-
-    returnObs = self.board.serialState()
-
     self.history = [
       {
         "state": self.board.serialState(),
@@ -46,21 +42,11 @@ class Threes():
 
     self.lastDirection = ""
 
-    return returnObs
+    return self.board.serialState()
 
-  def envStep(self, action):
-    self.previousState = self.board.serialState()
+  def step(self, action):
     self.executeMove(action)
-
-    lastActionValue = action
-    observation = self.board.serialState()
-
-    reward = self.calculateReward(lastActionValue)
-
-    return observation, reward
-
-  def envReset(self):
-    self.envStart()
+    return self.board.serialState(), self.calculateReward(action)
 
   def printOutput(self):
     if self.printMode == 1:

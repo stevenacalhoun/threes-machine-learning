@@ -13,131 +13,79 @@ class MLAgent:
   gamma = 0.99
   learningRate = 1.0
 
-  # Observation tracking
-  currentObs = None
-  lastObservation = None
-
-  # Total reward
-  totalReward = 0.0
-  count = 0
-
   # Constructor, takes a reference to an Environment
-  def __init__(self, env, vTable):
-    # Initialize value table
+  def __init__(self, gameEnv, vTable):
     self.vTable = vTable
-
-    # Set dummy action and observation
-    self.lastObservation=None
-
-    # Set the environment
-    self.gridEnvironment = env
-
-    # Get first observation and start the environment
-    self.initialObs = self.gridEnvironment.envStart()
-    self.initializeVtableStateEntry(self.initialObs)
+    self.gameEnv = gameEnv
+    self.restart()
 
   # Make an empty row in the v table with the state as key.
   def initializeVtableStateEntry(self, state):
     if tuple(state) not in self.vTable.keys():
       self.vTable[tuple(state)] = NUM_ACTIONS*[0.0]
 
-  # Once learning is done, use this to run the agent
-  # observation is the initial observation
+      # Mark impossible moves
+      impossibleMoves = self.gameEnv.board.impossibleMoves()
+      for impossibleMove in impossibleMoves:
+        self.vTable[tuple(state)][impossibleMove] = -1
+
+  # Execute policy in vtable choosing only the best moves
   def executePolicy(self, writeFile=False):
+    self.restart()
+
     if writeFile:
       outputfile = createTimeStampedFile("output")
-
-    # History stores up list of actions executed
-    history = []
-
-    # Start the counter
-    self.count = 0
-
-    # reset total reward
-    self.totalReward = 0.0
-
-    # Copy the initial observation
-    self.workingObservation = self.initialObs[:]
-
-    # Make sure the value table has the starting observation
-    self.initializeVtableStateEntry(self.workingObservation)
-
-    if writeFile:
-      outputfile.write("START\n")
       outputfile.write("LR:" + str(self.learningRate) + "\n")
       outputfile.write("Gamma:" + str(self.gamma) + "\n\n")
 
     # While a terminal state has not been hit and the counter hasn't expired, take the best action for the current state
-    while not self.workingObservation[-1] and self.count < self.numSteps:
+    while not self.workingState[-1] and self.count < self.numSteps:
       # Get the best action for this state
-      newAction = self.greedy(self.workingObservation)
-      history.append((newAction, self.workingObservation))
-
-      if writeFile:
-        outputfile.write("state: " + str(self.workingObservation) + "\n")
-        outputfile.write("action: " + str(newAction) + "\n")
-
-      # execute the step and get a new observation and reward
-      currentObs, reward = self.gridEnvironment.envStep(newAction)
-      if writeFile:
-        outputfile.write("reward:" + str(reward) + "\n")
-        outputfile.write("total reward:" + str(self.totalReward + reward) + "\n")
-        outputfile.write(str(self.gridEnvironment)+"\n")
-        outputfile.write("\n")
+      newAction = self.greedy(self.workingState)
+      currentState, reward = self.gameEnv.step(newAction)
 
       self.totalReward = self.totalReward + reward
-      self.workingObservation = currentObs[:]
+      self.workingState = currentState[:]
 
       # increment counter
       self.count += 1
 
-    if writeFile:
-      outputfile.write("END")
+      # Write data
+      if writeFile:
+        outputfile.write("state: " + str(self.workingState) + "\n")
+        outputfile.write("action: " + str(newAction) + "\n")
+        outputfile.write("reward:" + str(reward) + "\n")
+        outputfile.write("total reward:" + str(self.totalReward + reward) + "\n")
+        outputfile.write(str(self.gameEnv)+"\n")
+        outputfile.write("\n")
 
-    return history
-
-  # q-learning implementation
+  # Q-Learning
   def qLearn(self):
-    # copy the initial observation
-    self.workingObservation = self.initialObs[:]
-
-    # start the counter
-    self.count = 0
-
-    # reset total reward
-    self.totalReward = 0.0
+    self.restart()
 
     # while terminal state not reached and counter hasn't expired, use epsilon-greedy search
-    while not self.workingObservation[-1] and self.count < self.numSteps:
-      # Make sure table is populated correctly
-      self.initializeVtableStateEntry(self.workingObservation)
-
+    while not self.workingState[-1] and self.count < self.numSteps:
       # Take the epsilon-greedy action
-      nextAction = self.egreedy(self.workingObservation)
-      currentObs, reward = self.gridEnvironment.envStep(nextAction)
+      nextAction = self.egreedy(self.workingState)
+      currentState, reward = self.gameEnv.step(nextAction)
 
-      # Make sure table is populated correctly
-      self.initializeVtableStateEntry(currentObs)
-
-      # update the value table
+      # Update the vtable
+      self.initializeVtableStateEntry(currentState)
       self.updateVtable(
-        tuple(currentObs),
-        tuple(self.workingObservation),
+        tuple(currentState),
+        tuple(self.workingState),
         nextAction,
         reward,
-        currentObs[-1],
+        currentState[-1],
         [0,1,2,3]
       )
 
-      self.workingObservation = currentObs[:]
+      self.totalReward += reward
+      self.workingState = currentState[:]
 
       self.count += 1
-      self.totalReward += reward
 
-    # Done learning, reset environment
-    self.gridEnvironment.envReset()
-
-  ### Update the vTable during q-learning.
+  # Update the vTable
   def updateVtable(self, newState, lastState, action, reward, terminal, availableActions):
     r_tp1 = float(reward)
     Q_st_at = float(self.vTable[tuple(lastState)][action])
@@ -151,50 +99,33 @@ class MLAgent:
       for potentialAction in availableActions:
         Q_stp1_a.append(float(self.vTable[tuple(newState)][potentialAction]))
 
-      # Calculate new val
       newVal = Q_st_at + lr*(r_tp1 + y*max(Q_stp1_a) - Q_st_at)
 
     # Q(st, at) = Q(st, at) + lr*(rt+1 - Q(st,at))
     else:
-
-      # Calculate new val
       newVal = Q_st_at + lr*(r_tp1 - Q_st_at)
 
     # Update vtable
     self.vTable[tuple(lastState)][action] = newVal
 
-  def egreedy(self, observation):
-    self.initializeVtableStateEntry(observation)
+  # Choose best option or random choice
+  def egreedy(self, state):
+    self.initializeVtableStateEntry(state)
 
-    # Mark impossible moves
-    impossibleMoves = self.gridEnvironment.board.impossibleMoves()
-    for impossibleMove in impossibleMoves:
-      self.vTable[tuple(observation)][impossibleMove] = -1
-
-    # Choose random action
-    possibleMoves = self.gridEnvironment.board.possibleMoves()
+    # Explore or be greedy
     if random.uniform(0,1) < self.epsilon:
-      return random.choice(possibleMoves)
-
-    # Choose greedy option
+      return random.choice(self.gameEnv.board.possibleMoves())
     else:
-      return self.greedy(observation)
+      return self.greedy(state)
 
-  def greedy(self, observation):
-    self.initializeVtableStateEntry(observation)
+  # Choose best option
+  def greedy(self, state):
+    self.initializeVtableStateEntry(state)
+    return self.vTable[tuple(state)].index(max(self.vTable[tuple(state)]))
 
-    # Mark impossible moves
-    impossibleMoves = self.gridEnvironment.board.impossibleMoves()
-    for impossibleMove in impossibleMoves:
-      self.vTable[tuple(observation)][impossibleMove] = -1
-
-    rewards = []
-    for actionVal in range(0, NUM_ACTIONS):
-      rewards.append(self.vTable[tuple(observation)][actionVal])
-
-    return rewards.index(max(rewards))
-
-  # Reset the agent
-  def agentReset(self):
-    self.lastObservation = None
-    self.initialObs = self.gridEnvironment.envStart()
+  # Restart counts, observations, and environments
+  def restart(self):
+    self.count = 0
+    self.totalReward = 0.0
+    self.workingState = self.gameEnv.start()[:]
+    self.initializeVtableStateEntry(self.workingState)
