@@ -35,9 +35,7 @@ class Threes():
     self.previousState = []
     self.currentState = self.board.serialState()
 
-    returnObs = Observation()
-    returnObs.worldState = self.board.serialState()
-    returnObs.availableActions = self.board.possibleMoves()
+    returnObs = self.board.serialState()
 
     self.history = [
       {
@@ -55,10 +53,7 @@ class Threes():
     self.executeMove(action)
 
     lastActionValue = action
-    observation = Observation()
-    observation.worldState = self.board.serialState()
-    observation.availableActions = self.board.possibleMoves()
-    observation.isTerminal = not self.board.movesExists()
+    observation = self.board.serialState()
 
     reward = self.calculateReward(lastActionValue)
 
@@ -210,6 +205,7 @@ class Board():
     for i in range(0,NUM_TILES):
       state.append(self[i].value)
     state.append(self.stack[-1])
+    state.append(not self.movesExists())
     return state
 
   def initalizeBoardValues(self):

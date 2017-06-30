@@ -6,7 +6,7 @@ import pickle
 class MLController():
   def __init__(self, vTable={}):
     self.trainingEpisodes = 1000
-    self.trainingReportRate = 100
+    self.trainingReportRate = 1
 
     self.largestMoveCount = 0
     self.largestReward = 0
