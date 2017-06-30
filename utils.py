@@ -32,11 +32,32 @@ def createTimeStampedFile(dir,ext="txt"):
 
   return outputfile
 
-class InlinePrinter():
-  def __init__(self):
-    self.stdscr = curses.initscr()
-    curses.cbreak()
+class Printer():
+  def __init__(self, inlineMode):
+    self.inlineMode = inlineMode
+
+  def setInlineMode(self, inlineMode):
+    self.inlineMode = inlineMode
+    if self.inlineMode:
+      self.stdscr = curses.initscr()
+      curses.cbreak()
 
   def printLine(self, line, data):
-    self.stdscr.addstr(line, 0, data)
-    self.stdscr.refresh()
+    if self.inlineMode:
+      self.stdscr.addstr(line, 0, data)
+      self.stdscr.refresh()
+    else:
+      print(data)
+
+  def getInput(self):
+    if self.inlineMode:
+      key = self.stdscr.getch()
+    else:
+      key = raw_input("Enter Move: ")
+    return key
+
+  def end(self):
+    if self.inlineMode:
+      curses.endwin()
+
+printer = Printer(True)

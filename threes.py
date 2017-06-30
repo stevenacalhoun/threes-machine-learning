@@ -11,15 +11,8 @@ from utils import *
 from constants import *
 
 class Threes():
-  def __init__(self, printMode=0, writeBeginning=0):
+  def __init__(self):
     self.start()
-
-    self.printMode = printMode
-    if printMode == 2:
-      self.stdscr = curses.initscr()
-      curses.cbreak()
-      self.stdscr.keypad(1)
-      self.writeBeginning = writeBeginning
 
   def __str__(self):
     # Write board
@@ -48,16 +41,6 @@ class Threes():
     self.executeMove(action)
     return self.board.serialState(), self.calculateReward(action)
 
-  def printOutput(self):
-    if self.printMode == 1:
-      print(self)
-      print ()
-    elif self.printMode == 2:
-      self.stdscr.addstr(self.writeBeginning,0,blankSpace())
-      self.stdscr.addstr(self.writeBeginning,0,str(self))
-      self.stdscr.addstr(self.writeBeginning+7,0,"")
-      self.stdscr.refresh()
-
   def printDebugInfo(self):
     print("Move matrix for all dirs")
     for direction in ALL_MOVES:
@@ -71,34 +54,21 @@ class Threes():
       print(printStr)
 
   def getInput(self):
-    if self.printMode == 1:
-      key = raw_input("Enter Move: ")
-      if key == 'w':
-        direction = UP
-      elif key == 'd':
-        direction = RIGHT
-      elif key == 's':
-        direction = DOWN
-      elif key == 'a':
-        direction = LEFT
-      elif key == 'l':
-        direction = "Log"
-        self.printDebugInfo()
-      else:
-        direction = False
+    key = printer.getInput()
 
-    elif self.printMode == 2:
-      key = self.stdscr.getch()
-      if key == curses.KEY_UP:
-        direction = UP
-      elif key == curses.KEY_DOWN:
-        direction = DOWN
-      elif key == curses.KEY_LEFT:
-        direction = LEFT
-      elif key == curses.KEY_RIGHT:
-          direction = RIGHT
-      else:
-        direction = False
+    if key in ['w', curses.KEY_UP]:
+      direction = UP
+    elif key in ['d', curses.KEY_RIGHT]:
+      direction = RIGHT
+    elif key in ['s', curses.KEY_DOWN]:
+      direction = DOWN
+    elif key in ['a', curses.KEY_LEFT]:
+      direction = LEFT
+    elif key == 'l':
+      direction = "Log"
+      self.printDebugInfo()
+    else:
+      direction = False
 
     return direction
 
@@ -134,18 +104,15 @@ class Threes():
     direction = ""
     while True:
       # Print game and get input
-      self.printOutput()
+      printer.printLine(0, str(self))
+      printer.printLine(7, "")
       self.lastDirection = self.getInput()
 
       if self.lastDirection in ALL_MOVES:
         if not self.executeMove(self.lastDirection):
           break
 
-    if self.printMode == 1:
-      print("Game Over")
-    elif self.printMode == 2:
-      self.stdscr.addstr(self.writeBeginning+8, 0, "Game Over")
-      curses.endwin()
+    printer.printLine(8, "Game Over")
 
 class Board():
   def __init__(self):
@@ -161,7 +128,7 @@ class Board():
     self.moveOptions = {
       UP: {
         "order": UP_ORDER,
-        "front_check": self.getTileIdxAbove
+        "front_check": self.getTileIdxUp
       },
       RIGHT: {
         "order": RIGHT_ORDER,
@@ -169,7 +136,7 @@ class Board():
       },
       DOWN: {
         "order": DOWN_ORDER,
-        "front_check": self.getTileIdxBelow
+        "front_check": self.getTileIdxDown
       },
       LEFT: {
         "order": LEFT_ORDER,
@@ -301,13 +268,13 @@ class Board():
 
     return boolVals
 
-  def getTileIdxAbove(self, idx):
+  def getTileIdxUp(self, idx):
     return calculateTileInFront(idx, ROW_1_INDECIES, -NUM_COLS)
 
   def getTileIdxRight(self, idx):
     return calculateTileInFront(idx, COL_4_INDECIES, 1)
 
-  def getTileIdxBelow(self, idx):
+  def getTileIdxDown(self, idx):
     return calculateTileInFront(idx, ROW_4_INDECIES, NUM_COLS)
 
   def getTileIdxLeft(self, idx):

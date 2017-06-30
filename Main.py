@@ -34,38 +34,39 @@ def mlMode(vTableFile):
   mlController = MLController(vTable)
 
   # Learn and execute
-  mlController.runLearning()
+  mlController.learn()
   mlController.executeFinal()
 
-def playMode(vTable):
+def playMode():
   writeBeginning = 1
-  printMode = 0
 
   while True:
-    game = Threes(writeBeginning=writeBeginning, printMode=1)
+    game = Threes()
     game.play()
     writeBeginning += 10
 
 def main():
   parser = argparse.ArgumentParser(description='Run threes game.')
-  parser.add_argument("-m", metavar="--mode", type=str, help="Mode")
-  parser.add_argument("-t", metavar="--vtable", type=str, help="Vtable. Select file in 'vTables' or 'last' to continue with most recent file")
+  parser.add_argument("-m", metavar="--mode", default="p", type=str, help="Mode")
+  parser.add_argument("-t", metavar="--vtable", default=None, type=str, help="Vtable. Select file in 'vTables' or 'last' to continue with most recent file")
+  parser.add_argument("-i", metavar="--inline", default=True, type=int, help="Print inline")
 
   args = parser.parse_args()
+  printer.setInlineMode(args.i)
 
   if args.m == "m":
     mlMode(args.t)
   elif args.m == "p":
     playMode()
   else:
-    print("Need to select a mode")
+    print("Invalid mode")
 
 def exitGraceful(signal, frame):
   global mlController
   if mlController:
     mlController.executeFinal()
 
-  curses.endwin()
+  printer.end()
   sys.exit(0)
 
 if __name__ == "__main__":
